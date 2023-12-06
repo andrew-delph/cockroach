@@ -1021,7 +1021,6 @@ func applyColumnMutation(
 			return pgerror.Newf(pgcode.InvalidTableDefinition,
 				`column "%s" is in a primary index`, col.GetName())
 		}
-
 		// See if there's already a mutation to add/drop a not null constraint.
 		for i := range tableDesc.Mutations {
 			if constraint := tableDesc.Mutations[i].GetConstraint(); constraint != nil &&
@@ -1055,6 +1054,12 @@ func applyColumnMutation(
 				"column %q is not a stored computed column", col.GetName())
 		}
 		col.ColumnDesc().ComputeExpr = nil
+
+	case *tree.AlterTableSetGeneratedAlways:
+		col.ColumnDesc().GeneratedAsIdentityType = 1
+
+	case *tree.AlterTableSetGeneratedDefault:
+		col.ColumnDesc().GeneratedAsIdentityType = 0
 	}
 	return nil
 }
