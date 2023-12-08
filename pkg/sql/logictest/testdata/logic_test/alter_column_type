@@ -663,3 +663,53 @@ SELECT b from t_new ORDER BY b;
 6
 33
 44
+
+statement ok
+ALTER TABLE t_new ALTER COLUMN b SET INCREMENT BY 2;
+
+statement ok
+INSERT INTO t_new DEFAULT VALUES;
+
+statement ok
+INSERT INTO t_new DEFAULT VALUES;
+
+statement ok
+INSERT INTO t_new DEFAULT VALUES;
+
+query I
+SELECT b from t_new ORDER BY b;
+----
+4
+5
+6
+8
+10
+12
+33
+44
+
+statement ok
+ALTER TABLE t_new ALTER COLUMN b SET INCREMENT BY 4;
+
+statement error pq: at or near "restart": syntax error: sequence option "restart" not supported here
+ALTER TABLE t_new ALTER COLUMN b SET RESTART 4;
+
+statement ok
+INSERT INTO t_new DEFAULT VALUES;
+
+statement ok
+INSERT INTO t_new DEFAULT VALUES;
+
+query I
+SELECT b from t_new ORDER BY b;
+----
+4
+5
+6
+8
+10
+12
+16
+20
+33
+44

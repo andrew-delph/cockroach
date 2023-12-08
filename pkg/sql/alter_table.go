@@ -1060,6 +1060,44 @@ func applyColumnMutation(
 
 	case *tree.AlterTableSetGeneratedDefault:
 		col.ColumnDesc().GeneratedAsIdentityType = 0
+
+	case *tree.AlterTableSequenceOption:
+		newOpts := []tree.SequenceOption{t.SeqOption}
+		opts, err := col.GetGeneratedAsIdentitySequenceOption(col.GetType().Width())
+		if err != nil {
+			return err
+		}
+
+		seqId := col.GetUsesSequenceID(0)
+		seqDesc, err := params.p.Descriptors().MutableByID(params.p.txn).Table(ctx, seqId)
+		if err != nil {
+			return errors.Newf("error resolving sequence dependency %d", seqId)
+		}
+
+		if err := assignSequenceOptions(
+			params.ctx,
+			params.p,
+			opts,
+			newOpts,
+			false, /* setDefaults */
+			seqDesc.GetID(),
+			seqDesc.GetParentID(),
+			col.GetType(),
+		); err != nil {
+			return err
+		}
+
+		seqDesc.SequenceOpts = opts
+
+		mutId := seqDesc.ClusterVersion().NextMutationID
+		if err := params.p.writeSchemaChange(
+			params.ctx, seqDesc, mutId, fmt.Sprintf("updating table sequence %s(%d) for table %s(%d)",
+				seqDesc.Name, seqDesc.ID, tableDesc.Name, tableDesc.ID),
+		); err != nil {
+			return pgerror.Newf(pgcode.InvalidColumnDefinition,
+				"writeSchemaChange err ")
+		}
+
 	}
 	return nil
 }
