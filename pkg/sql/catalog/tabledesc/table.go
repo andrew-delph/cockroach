@@ -149,6 +149,9 @@ func MakeColumnDefDescs(
 		if genSeqOpt := d.GeneratedIdentity.SeqOptions; genSeqOpt != nil {
 			s := tree.Serialize(&d.GeneratedIdentity.SeqOptions)
 			col.GeneratedAsIdentitySequenceOption = &s
+		} else {
+			s := ""
+			col.GeneratedAsIdentitySequenceOption = &s
 		}
 	}
 
