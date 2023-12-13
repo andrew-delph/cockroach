@@ -1058,6 +1058,31 @@ func applyColumnMutation(
 				"column %q is not a stored computed column", col.GetName())
 		}
 		col.ColumnDesc().ComputeExpr = nil
+
+	case *tree.AlterTableDropIdentity:
+
+		if !col.IsGeneratedAsIdentity() {
+			return sqlerrors.NewSyntaxErrorf("column %q is not an identity column", col.GetName())
+		}
+
+		if col.NumUsesSequences() != 1 {
+			return errors.Newf("col.NumUsesSequences() is not 1")
+		}
+		seqId := col.GetUsesSequenceID(0)
+
+		seqDesc, err := params.p.Descriptors().MutableByID(params.p.txn).Table(ctx, seqId)
+		if err != nil {
+			return errors.Newf("error resolving sequence dependency %d", seqId)
+		}
+
+		err = params.p.dropSequenceImpl(ctx, seqDesc, false, "test", tree.DropDefault)
+		if err != nil {
+			return errors.Newf("error dropping sequence %d", seqId)
+		}
+
+		col.ColumnDesc().GeneratedAsIdentitySequenceOption = nil
+		col.ColumnDesc().GeneratedAsIdentityType = catpb.GeneratedAsIdentityType_NOT_IDENTITY_COLUMN
+
 	}
 	return nil
 }

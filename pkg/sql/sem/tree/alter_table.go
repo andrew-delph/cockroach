@@ -56,26 +56,30 @@ type AlterTableCmd interface {
 	alterTableCmd()
 }
 
-func (*AlterTableAddColumn) alterTableCmd()          {}
-func (*AlterTableAddConstraint) alterTableCmd()      {}
-func (*AlterTableAlterColumnType) alterTableCmd()    {}
-func (*AlterTableAlterPrimaryKey) alterTableCmd()    {}
-func (*AlterTableDropColumn) alterTableCmd()         {}
-func (*AlterTableDropConstraint) alterTableCmd()     {}
-func (*AlterTableDropNotNull) alterTableCmd()        {}
-func (*AlterTableDropStored) alterTableCmd()         {}
-func (*AlterTableSetNotNull) alterTableCmd()         {}
-func (*AlterTableRenameColumn) alterTableCmd()       {}
-func (*AlterTableRenameConstraint) alterTableCmd()   {}
-func (*AlterTableSetAudit) alterTableCmd()           {}
-func (*AlterTableSetDefault) alterTableCmd()         {}
-func (*AlterTableSetOnUpdate) alterTableCmd()        {}
-func (*AlterTableSetVisible) alterTableCmd()         {}
-func (*AlterTableValidateConstraint) alterTableCmd() {}
-func (*AlterTablePartitionByTable) alterTableCmd()   {}
-func (*AlterTableInjectStats) alterTableCmd()        {}
-func (*AlterTableSetStorageParams) alterTableCmd()   {}
-func (*AlterTableResetStorageParams) alterTableCmd() {}
+func (*AlterTableAddColumn) alterTableCmd()           {}
+func (*AlterTableAddConstraint) alterTableCmd()       {}
+func (*AlterTableAlterColumnType) alterTableCmd()     {}
+func (*AlterTableAlterPrimaryKey) alterTableCmd()     {}
+func (*AlterTableDropColumn) alterTableCmd()          {}
+func (*AlterTableDropConstraint) alterTableCmd()      {}
+func (*AlterTableDropNotNull) alterTableCmd()         {}
+func (*AlterTableDropStored) alterTableCmd()          {}
+func (*AlterTableSetNotNull) alterTableCmd()          {}
+func (*AlterTableRenameColumn) alterTableCmd()        {}
+func (*AlterTableRenameConstraint) alterTableCmd()    {}
+func (*AlterTableSetAudit) alterTableCmd()            {}
+func (*AlterTableSetDefault) alterTableCmd()          {}
+func (*AlterTableSetOnUpdate) alterTableCmd()         {}
+func (*AlterTableSetVisible) alterTableCmd()          {}
+func (*AlterTableValidateConstraint) alterTableCmd()  {}
+func (*AlterTablePartitionByTable) alterTableCmd()    {}
+func (*AlterTableInjectStats) alterTableCmd()         {}
+func (*AlterTableSetStorageParams) alterTableCmd()    {}
+func (*AlterTableResetStorageParams) alterTableCmd()  {}
+func (*AlterTableSetGeneratedAlways) alterTableCmd()  {}
+func (*AlterTableSetGeneratedDefault) alterTableCmd() {}
+func (*AlterTableSequenceOption) alterTableCmd()      {}
+func (*AlterTableDropIdentity) alterTableCmd()        {}
 
 var _ AlterTableCmd = &AlterTableAddColumn{}
 var _ AlterTableCmd = &AlterTableAddConstraint{}
@@ -96,6 +100,7 @@ var _ AlterTableCmd = &AlterTablePartitionByTable{}
 var _ AlterTableCmd = &AlterTableInjectStats{}
 var _ AlterTableCmd = &AlterTableSetStorageParams{}
 var _ AlterTableCmd = &AlterTableResetStorageParams{}
+var _ AlterTableCmd = &AlterTableDropIdentity{}
 
 // ColumnMutationCmd is the subset of AlterTableCmds that modify an
 // existing column.
@@ -755,4 +760,25 @@ func GetTableType(isSequence bool, isView bool, isMaterialized bool) string {
 	}
 
 	return tableType
+}
+
+type AlterTableDropIdentity struct {
+	Column Name
+}
+
+// GetColumn implemnets the ColumnMutationCmd interface.
+func (node *AlterTableDropIdentity) GetColumn() Name {
+	return node.Column
+}
+
+// TelemetryName implements the AlterTableCmd interface.
+func (node *AlterTableDropIdentity) TelemetryName() string {
+	return "alter_table_sequence_option"
+}
+
+// Format implements the NodeFormatter interface.
+func (node *AlterTableDropIdentity) Format(ctx *FmtCtx) {
+	ctx.WriteString(" ALTER COLUMN ")
+	ctx.FormatNode(&node.Column)
+	ctx.WriteString(" DROP IDENTITY")
 }
