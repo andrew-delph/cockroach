@@ -2973,6 +2973,43 @@ c            YES          BY DEFAULT           NO
 rowid        NO           ·                    NO
 
 statement ok
+CREATE DATABASE test_identity
+
+statement ok
+SET DATABASE = test_identity
+
+statement ok
+CREATE TABLE drop_generated_as_identity (
+  a INT,
+  b INT GENERATED ALWAYS AS IDENTITY (START WITH 10),
+  c INT GENERATED ALWAYS AS IDENTITY (START WITH 10)
+)
+
+statement ok
+ALTER TABLE drop_generated_as_identity ALTER COLUMN b DROP IDENTITY;
+
+query TTTTTTTTTT colnames
+SELECT column_name, is_identity, identity_generation, is_nullable, column_default, identity_start, identity_increment, identity_maximum, identity_minimum, identity_cycle
+FROM information_schema.columns
+WHERE table_schema = 'public' AND table_name = 'drop_generated_as_identity'
+ORDER BY column_name
+----
+column_name  is_identity  identity_generation  is_nullable  column_default                                                identity_start  identity_increment  identity_maximum     identity_minimum  identity_cycle
+a            NO           ·                    YES          NULL                                                          NULL            NULL                NULL                 NULL              NULL
+b            NO           ·                    NO           NULL                                                          NULL            NULL                NULL                 NULL              NULL
+c            YES          ALWAYS               NO           nextval('public.drop_generated_as_identity_c_seq'::REGCLASS)  10              1                   9223372036854775807  1                 NULL
+rowid        NO           ·                    NO           unique_rowid()                                                NULL            NULL                NULL                 NULL              NULL
+
+query TTTTIIITTTTT colnames
+SELECT * FROM information_schema.sequences ORDER BY sequence_name
+----
+sequence_catalog  sequence_schema  sequence_name                     data_type  numeric_precision  numeric_precision_radix  numeric_scale  start_value  minimum_value  maximum_value        increment  cycle_option
+test_identity     public           drop_generated_as_identity_c_seq  INT8       64                 2                        0              10           1              9223372036854775807  1          NO
+
+statement ok
+SET DATABASE = test
+
+statement ok
 CREATE TABLE char_len (
   a INT, b INT2, c INT4,
   d STRING, e STRING(12),

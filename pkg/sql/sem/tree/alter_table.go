@@ -76,6 +76,7 @@ func (*AlterTablePartitionByTable) alterTableCmd()   {}
 func (*AlterTableInjectStats) alterTableCmd()        {}
 func (*AlterTableSetStorageParams) alterTableCmd()   {}
 func (*AlterTableResetStorageParams) alterTableCmd() {}
+func (*AlterTableDropIdentity) alterTableCmd()       {}
 
 var _ AlterTableCmd = &AlterTableAddColumn{}
 var _ AlterTableCmd = &AlterTableAddConstraint{}
@@ -96,6 +97,7 @@ var _ AlterTableCmd = &AlterTablePartitionByTable{}
 var _ AlterTableCmd = &AlterTableInjectStats{}
 var _ AlterTableCmd = &AlterTableSetStorageParams{}
 var _ AlterTableCmd = &AlterTableResetStorageParams{}
+var _ AlterTableCmd = &AlterTableDropIdentity{}
 
 // ColumnMutationCmd is the subset of AlterTableCmds that modify an
 // existing column.
@@ -736,6 +738,32 @@ func (node *AlterTableOwner) Format(ctx *FmtCtx) {
 	ctx.FormatNode(node.Name)
 	ctx.WriteString(" OWNER TO ")
 	ctx.FormatNode(&node.Owner)
+}
+
+// AlterTableDropIdentity represents an ALTER COLUMN DROP IDENTITY [ IF EXISTS ].
+type AlterTableDropIdentity struct {
+	Column   Name
+	IfExists bool
+}
+
+// GetColumn implemnets the ColumnMutationCmd interface.
+func (node *AlterTableDropIdentity) GetColumn() Name {
+	return node.Column
+}
+
+// TelemetryName implements the AlterTableCmd interface.
+func (node *AlterTableDropIdentity) TelemetryName() string {
+	return "drop_identity"
+}
+
+// Format implements the NodeFormatter interface.
+func (node *AlterTableDropIdentity) Format(ctx *FmtCtx) {
+	ctx.WriteString(" ALTER COLUMN ")
+	ctx.FormatNode(&node.Column)
+	ctx.WriteString(" DROP IDENTITY")
+	if node.IfExists {
+		ctx.WriteString(" IF EXISTS")
+	}
 }
 
 // GetTableType returns a string representing the type of table the command

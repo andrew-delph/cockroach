@@ -1860,6 +1860,7 @@ alter_ddl_stmt:
 //   ALTER TABLE ... ALTER [COLUMN] <colname> {SET ON UPDATE <expr> | DROP ON UPDATE}
 //   ALTER TABLE ... ALTER [COLUMN] <colname> DROP NOT NULL
 //   ALTER TABLE ... ALTER [COLUMN] <colname> DROP STORED
+//   ALTER TABLE ... ALTER [COLUMN] <colname> DROP IDENTITY [ IF EXISTS ]
 //   ALTER TABLE ... ALTER [COLUMN] <colname> [SET DATA] TYPE <type> [COLLATE <collation>]
 //   ALTER TABLE ... ALTER PRIMARY KEY USING COLUMNS ( <colnames...> )
 //   ALTER TABLE ... RENAME TO <newname>
@@ -2756,6 +2757,16 @@ alter_table_cmd:
 | ALTER opt_column column_name DROP NOT NULL
   {
     $$.val = &tree.AlterTableDropNotNull{Column: tree.Name($3)}
+  }
+  // ALTER TABLE <name> ALTER [COLUMN] <colname> DROP IDENTITY
+| ALTER opt_column column_name DROP IDENTITY
+  {
+    $$.val = &tree.AlterTableDropIdentity{Column: tree.Name($3), IfExists: false}
+  }  
+  // ALTER TABLE <name> ALTER [COLUMN] <colname> DROP IDENTITY IF EXISTS
+| ALTER opt_column column_name DROP IDENTITY IF EXISTS
+  {
+    $$.val = &tree.AlterTableDropIdentity{Column: tree.Name($3), IfExists: true}
   }
   // ALTER TABLE <name> ALTER [COLUMN] <colname> DROP STORED
 | ALTER opt_column column_name DROP STORED

@@ -1057,6 +1057,40 @@ func applyColumnMutation(
 				"column %q is not a stored computed column", col.GetName())
 		}
 		col.ColumnDesc().ComputeExpr = nil
+
+	case *tree.AlterTableDropIdentity:
+		if !col.IsGeneratedAsIdentity() {
+			if t.IfExists {
+				params.p.BufferClientNotice(
+					params.ctx,
+					pgnotice.Newf("column %q of relation %q is not an identity column, skipping", col.GetName(), tableDesc.GetName()),
+				)
+				return nil
+			}
+			return sqlerrors.NewSyntaxErrorf("column %q of relation %q is not an identity column", col.GetName(), tableDesc.GetName())
+		}
+
+		// Identity columns should own 1 sequence
+		if len(col.ColumnDesc().OwnsSequenceIds) != 1 {
+			return pgerror.Newf(pgcode.InvalidColumnDefinition,
+				"identity column %q owns %d sequences instead of 1", col.GetName(), len(col.ColumnDesc().OwnsSequenceIds))
+		}
+
+		// Verify sequence is not depended on by another column.
+		// Use tree.DropDefault behavior to verify without the need to alter other dependencies via tree.DropCascade.
+		if err := params.p.canRemoveAllColumnOwnedSequences(params.ctx, tableDesc, col, tree.DropDefault); err != nil {
+			return err
+		}
+		// Drop the identity sequence and remove it from the column OwnsSequenceIds and DefaultExpr.
+		// Use tree.DropCascade behavior to remove dependencies on the column.
+		if err := params.p.dropSequencesOwnedByCol(params.ctx, col, true /* queueJob */, tree.DropCascade); err != nil {
+			return err
+		}
+
+		// Remove column identity descriptors
+		col.ColumnDesc().GeneratedAsIdentitySequenceOption = nil
+		col.ColumnDesc().GeneratedAsIdentityType = catpb.GeneratedAsIdentityType_NOT_IDENTITY_COLUMN
+
 	}
 	return nil
 }
