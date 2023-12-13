@@ -3401,6 +3401,7 @@ alter_table_cmd ::=
 	| 'ALTER' opt_column column_name alter_column_on_update
 	| 'ALTER' opt_column column_name alter_column_visible
 	| 'ALTER' opt_column column_name 'DROP' 'NOT' 'NULL'
+	| 'ALTER' opt_column column_name alter_column_sequence_option_elem
 	| 'ALTER' opt_column column_name set_generated_always
 	| 'ALTER' opt_column column_name set_generated_default
 	| 'ALTER' opt_column column_name 'DROP' 'STORED'
@@ -4308,6 +4309,21 @@ alter_column_on_update ::=
 alter_column_visible ::=
 	'SET' 'VISIBLE'
 	| 'SET' 'NOT' 'VISIBLE'
+
+alter_column_sequence_option_elem ::=
+	'SET' 'NO' 'CYCLE'
+	| 'SET' 'CACHE' signed_iconst64
+	| 'SET' 'INCREMENT' signed_iconst64
+	| 'SET' 'INCREMENT' 'BY' signed_iconst64
+	| 'SET' 'MINVALUE' signed_iconst64
+	| 'SET' 'NO' 'MINVALUE'
+	| 'SET' 'MAXVALUE' signed_iconst64
+	| 'SET' 'NO' 'MAXVALUE'
+	| 'SET' 'START' signed_iconst64
+	| 'SET' 'START' 'WITH' signed_iconst64
+	| 'RESTART'
+	| 'RESTART' signed_iconst64
+	| 'RESTART' 'WITH' signed_iconst64
 
 set_generated_always ::=
 	'SET' 'GENERATED_ALWAYS' 'ALWAYS'

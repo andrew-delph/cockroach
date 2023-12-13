@@ -78,6 +78,7 @@ func (*AlterTableSetStorageParams) alterTableCmd()    {}
 func (*AlterTableResetStorageParams) alterTableCmd()  {}
 func (*AlterTableSetGeneratedAlways) alterTableCmd()  {}
 func (*AlterTableSetGeneratedDefault) alterTableCmd() {}
+func (*AlterTableSequenceOption) alterTableCmd()      {}
 
 var _ AlterTableCmd = &AlterTableAddColumn{}
 var _ AlterTableCmd = &AlterTableAddConstraint{}
@@ -100,6 +101,7 @@ var _ AlterTableCmd = &AlterTableSetStorageParams{}
 var _ AlterTableCmd = &AlterTableResetStorageParams{}
 var _ AlterTableCmd = &AlterTableSetGeneratedAlways{}
 var _ AlterTableCmd = &AlterTableSetGeneratedDefault{}
+var _ AlterTableCmd = &AlterTableSequenceOption{}
 
 // ColumnMutationCmd is the subset of AlterTableCmds that modify an
 // existing column.
@@ -805,4 +807,30 @@ func GetTableType(isSequence bool, isView bool, isMaterialized bool) string {
 	}
 
 	return tableType
+}
+
+// AlterTableSetGeneratedDefault represents an ALTER COLUMN sequence option command.
+type AlterTableSequenceOption struct {
+	Column    Name
+	SeqOption SequenceOption
+}
+
+// GetColumn implemnets the ColumnMutationCmd interface.
+func (node *AlterTableSequenceOption) GetColumn() Name {
+	return node.Column
+}
+
+// TelemetryName implements the AlterTableCmd interface.
+func (node *AlterTableSequenceOption) TelemetryName() string {
+	return "alter_table_sequence_option"
+}
+
+// Format implements the NodeFormatter interface.
+func (node *AlterTableSequenceOption) Format(ctx *FmtCtx) {
+	ctx.WriteString(" ALTER COLUMN ")
+	ctx.FormatNode(&node.Column)
+	if node.SeqOption.Name != SeqOptRestart {
+		ctx.WriteString(" SET")
+	}
+	ctx.FormatNode(&SequenceOptions{node.SeqOption})
 }
