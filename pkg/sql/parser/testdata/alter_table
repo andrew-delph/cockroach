@@ -1277,3 +1277,35 @@ ALTER TABLE a ALTER COLUMN b SET DATA TYPE "A Nice Name For A Type 🌠" -- norm
 ALTER TABLE a ALTER COLUMN b SET DATA TYPE "A Nice Name For A Type 🌠" -- fully parenthesized
 ALTER TABLE a ALTER COLUMN b SET DATA TYPE "A Nice Name For A Type 🌠" -- literals removed
 ALTER TABLE _ ALTER COLUMN _ SET DATA TYPE _ -- identifiers removed
+
+parse
+ALTER TABLE a SET LOGGED;
+----
+ALTER TABLE a SET UNLOGGED -- normalized!
+ALTER TABLE a SET UNLOGGED -- fully parenthesized
+ALTER TABLE a SET UNLOGGED -- literals removed
+ALTER TABLE _ SET UNLOGGED -- identifiers removed
+
+parse
+ALTER TABLE IF EXISTS a SET LOGGED;
+----
+ALTER TABLE IF EXISTS a SET UNLOGGED -- normalized!
+ALTER TABLE IF EXISTS a SET UNLOGGED -- fully parenthesized
+ALTER TABLE IF EXISTS a SET UNLOGGED -- literals removed
+ALTER TABLE IF EXISTS _ SET UNLOGGED -- identifiers removed
+
+parse
+ALTER TABLE a SET UNLOGGED;
+----
+ALTER TABLE a SET UNLOGGED -- normalized!
+ALTER TABLE a SET UNLOGGED -- fully parenthesized
+ALTER TABLE a SET UNLOGGED -- literals removed
+ALTER TABLE _ SET UNLOGGED -- identifiers removed
+
+parse
+ALTER TABLE IF EXISTS a SET UNLOGGED;
+----
+ALTER TABLE IF EXISTS a SET UNLOGGED -- normalized!
+ALTER TABLE IF EXISTS a SET UNLOGGED -- fully parenthesized
+ALTER TABLE IF EXISTS a SET UNLOGGED -- literals removed
+ALTER TABLE IF EXISTS _ SET UNLOGGED -- identifiers removed

@@ -964,7 +964,7 @@ func (u *sqlSymUnion) showFingerprintOptions() *tree.ShowFingerprintOptions {
 %token <str> LABEL LANGUAGE LAST LATERAL LATEST LC_CTYPE LC_COLLATE
 %token <str> LEADING LEASE LEAST LEAKPROOF LEFT LESS LEVEL LIKE LIMIT
 %token <str> LINESTRING LINESTRINGM LINESTRINGZ LINESTRINGZM
-%token <str> LIST LOCAL LOCALITY LOCALTIME LOCALTIMESTAMP LOCKED LOGIN LOOKUP LOW LSHIFT
+%token <str> LIST LOCAL LOCALITY LOCALTIME LOCALTIMESTAMP LOCKED LOGGED LOGIN LOOKUP LOW LSHIFT
 
 %token <str> MATCH MATERIALIZED MERGE MINVALUE MAXVALUE METHOD MINUTE MODIFYCLUSTERSETTING MODIFYSQLCLUSTERSETTING MONTH MOVE
 %token <str> MULTILINESTRING MULTILINESTRINGM MULTILINESTRINGZ MULTILINESTRINGZM
@@ -2897,6 +2897,14 @@ alter_table_cmd:
     $$.val = &tree.AlterTableResetStorageParams{
       Params: $3.storageParamKeys(),
     }
+  }
+| SET LOGGED
+  {
+    $$.val = &tree.AlterTablePersistance{Persistence: tree.PersistenceUnlogged}
+  }
+| SET UNLOGGED
+  {
+    $$.val = &tree.AlterTablePersistance{Persistence: tree.PersistenceUnlogged}
   }
 
 audit_mode:
@@ -17027,6 +17035,7 @@ unreserved_keyword:
 | LIST
 | LOCAL
 | LOCKED
+| LOGGED
 | LOGIN
 | LOCALITY
 | LOOKUP
@@ -17571,6 +17580,7 @@ bare_label_keywords:
 | LOCALTIME
 | LOCALTIMESTAMP
 | LOCKED
+| LOGGED
 | LOGIN
 | LOOKUP
 | LOW

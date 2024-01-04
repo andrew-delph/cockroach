@@ -76,6 +76,7 @@ func (*AlterTablePartitionByTable) alterTableCmd()   {}
 func (*AlterTableInjectStats) alterTableCmd()        {}
 func (*AlterTableSetStorageParams) alterTableCmd()   {}
 func (*AlterTableResetStorageParams) alterTableCmd() {}
+func (*AlterTablePersistance) alterTableCmd()        {}
 
 var _ AlterTableCmd = &AlterTableAddColumn{}
 var _ AlterTableCmd = &AlterTableAddConstraint{}
@@ -96,6 +97,7 @@ var _ AlterTableCmd = &AlterTablePartitionByTable{}
 var _ AlterTableCmd = &AlterTableInjectStats{}
 var _ AlterTableCmd = &AlterTableSetStorageParams{}
 var _ AlterTableCmd = &AlterTableResetStorageParams{}
+var _ AlterTableCmd = &AlterTablePersistance{}
 
 // ColumnMutationCmd is the subset of AlterTableCmds that modify an
 // existing column.
@@ -736,6 +738,27 @@ func (node *AlterTableOwner) Format(ctx *FmtCtx) {
 	ctx.FormatNode(node.Name)
 	ctx.WriteString(" OWNER TO ")
 	ctx.FormatNode(&node.Owner)
+}
+
+// AlterTableSetSchema represents an ALTER TABLE SET SCHEMA command.
+type AlterTablePersistance struct {
+	Persistence Persistence
+}
+
+// Format implements the NodeFormatter interface.
+func (node *AlterTablePersistance) Format(ctx *FmtCtx) {
+	switch node.Persistence {
+	case PersistencePermanent:
+		ctx.WriteString(" SET LOGGED")
+	case PersistenceUnlogged:
+		ctx.WriteString(" SET UNLOGGED")
+	}
+}
+
+// TelemetryName returns the telemetry counter to increment
+// when this command is used.
+func (node *AlterTablePersistance) TelemetryName() string {
+	return "set_persistance"
 }
 
 // GetTableType returns a string representing the type of table the command

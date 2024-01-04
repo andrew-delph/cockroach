@@ -831,6 +831,20 @@ func (n *alterTableNode) startExec(params runParams) error {
 				return err
 			}
 			descriptorChanged = true
+		case *tree.AlterTablePersistance:
+			if n.tableDesc.Persistence().IsTemporary() {
+				return pgerror.Newf(
+					pgcode.InvalidTableDefinition,
+					"temporary table %q cannot be SET LOGGED/UNLOGGED",
+					n.tableDesc.GetName(),
+				)
+			}
+			if t.Persistence.IsUnlogged() {
+				params.p.BufferClientNotice(
+					params.ctx,
+					pgnotice.Newf("UNLOGGED TABLE will behave as a regular table in CockroachDB"),
+				)
+			}
 		default:
 			return errors.AssertionFailedf("unsupported alter command: %T", cmd)
 		}
