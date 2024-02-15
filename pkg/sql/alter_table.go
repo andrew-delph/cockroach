@@ -1057,6 +1057,45 @@ func applyColumnMutation(
 				"column %q is not a stored computed column", col.GetName())
 		}
 		col.ColumnDesc().ComputeExpr = nil
+
+	case *tree.AlterTableIdentity:
+		if !col.IsGeneratedAsIdentity() {
+			return pgerror.Newf(pgcode.ObjectNotInPrerequisiteState,
+				"column %q of relation %q is not an identity column",
+				col.GetName(), tableDesc.GetName())
+		}
+
+		newOpts := []tree.SequenceOption{t.SeqOption}
+
+		if col.NumUsesSequences() != 1 {
+			return errors.Newf("col.NumUsesSequences() is not 1")
+		}
+		seqID := col.GetUsesSequenceID(0)
+
+		seqDesc, err := params.p.Descriptors().MutableByID(params.p.txn).Table(ctx, seqID)
+		if err != nil {
+			return errors.Newf("error resolving sequence dependency %d", seqID)
+		}
+
+		if err := alterSequenceImpl(params, seqDesc, newOpts, t); err != nil {
+			return err
+		}
+
+		// Reference ShowCreateSequence() for SQL representation creation of a sequence
+		opts := seqDesc.GetSequenceOpts()
+		f := tree.NewFmtCtx(tree.FmtSimple)
+		f.Printf(" MINVALUE %d", opts.MinValue)
+		f.Printf(" MAXVALUE %d", opts.MaxValue)
+		f.Printf(" INCREMENT %d", opts.Increment)
+		f.Printf(" START %d", opts.Start)
+		if opts.CacheSize > 1 {
+			f.Printf(" CACHE %d", opts.CacheSize)
+		}
+
+		s := f.CloseAndGetString()
+		col.ColumnDesc().GeneratedAsIdentitySequenceOption = &s
+		return nil
+
 	}
 	return nil
 }

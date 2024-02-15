@@ -76,6 +76,7 @@ func (*AlterTablePartitionByTable) alterTableCmd()   {}
 func (*AlterTableInjectStats) alterTableCmd()        {}
 func (*AlterTableSetStorageParams) alterTableCmd()   {}
 func (*AlterTableResetStorageParams) alterTableCmd() {}
+func (*AlterTableIdentity) alterTableCmd()           {}
 
 var _ AlterTableCmd = &AlterTableAddColumn{}
 var _ AlterTableCmd = &AlterTableAddConstraint{}
@@ -96,6 +97,7 @@ var _ AlterTableCmd = &AlterTablePartitionByTable{}
 var _ AlterTableCmd = &AlterTableInjectStats{}
 var _ AlterTableCmd = &AlterTableSetStorageParams{}
 var _ AlterTableCmd = &AlterTableResetStorageParams{}
+var _ AlterTableCmd = &AlterTableIdentity{}
 
 // ColumnMutationCmd is the subset of AlterTableCmds that modify an
 // existing column.
@@ -736,6 +738,32 @@ func (node *AlterTableOwner) Format(ctx *FmtCtx) {
 	ctx.FormatNode(node.Name)
 	ctx.WriteString(" OWNER TO ")
 	ctx.FormatNode(&node.Owner)
+}
+
+// AlterTableIdentity represents commands to alter a column identity.
+type AlterTableIdentity struct {
+	Column    Name
+	SeqOption SequenceOption
+}
+
+// GetColumn implemnets the ColumnMutationCmd interface.
+func (node *AlterTableIdentity) GetColumn() Name {
+	return node.Column
+}
+
+// TelemetryName implements the AlterTableCmd interface.
+func (node *AlterTableIdentity) TelemetryName() string {
+	return "alter_identity"
+}
+
+// Format implements the NodeFormatter interface.
+func (node *AlterTableIdentity) Format(ctx *FmtCtx) {
+	ctx.WriteString(" ALTER COLUMN ")
+	ctx.FormatNode(&node.Column)
+	if node.SeqOption.Name != SeqOptRestart {
+		ctx.WriteString(" SET")
+	}
+	ctx.FormatNode(&SequenceOptions{node.SeqOption})
 }
 
 // GetTableType returns a string representing the type of table the command
