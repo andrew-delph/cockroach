@@ -63,9 +63,10 @@ func (n *alterSequenceNode) ReadingOwnWrites() {}
 
 func (n *alterSequenceNode) startExec(params runParams) error {
 	telemetry.Inc(sqltelemetry.SchemaChangeAlterCounter("sequence"))
-	desc := n.seqDesc
 
-	if err := alterSequenceImpl(params, desc, n.n.Options, n.n); err != nil {
+	// Alter sequence with specified options.
+	// Does not override existing values if not specified.
+	if err := alterSequenceImpl(params, n.seqDesc, n.n.Options, n.n); err != nil {
 		return err
 	}
 
@@ -79,7 +80,8 @@ func (n *alterSequenceNode) startExec(params runParams) error {
 		})
 }
 
-// alterSequenceImpl applies given tree.SequenceOptions to the specified table descriptor.
+// alterSequenceImpl applies given tree.SequenceOptions to the specified sequence descriptor.
+// exisiting sequence options are not overridden with default values.
 func alterSequenceImpl(params runParams, seqDesc *tabledesc.Mutable, seqOptions tree.SequenceOptions, formatter tree.NodeFormatter) error {
 	oldMinValue := seqDesc.SequenceOpts.MinValue
 	oldMaxValue := seqDesc.SequenceOpts.MaxValue

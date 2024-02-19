@@ -26,6 +26,7 @@ import (
 	"github.com/cockroachdb/cockroach/pkg/sql/catalog"
 	"github.com/cockroachdb/cockroach/pkg/sql/catalog/catalogkeys"
 	"github.com/cockroachdb/cockroach/pkg/sql/catalog/catpb"
+	"github.com/cockroachdb/cockroach/pkg/sql/catalog/colinfo"
 	"github.com/cockroachdb/cockroach/pkg/sql/catalog/descpb"
 	"github.com/cockroachdb/cockroach/pkg/sql/catalog/funcdesc"
 	"github.com/cockroachdb/cockroach/pkg/sql/catalog/resolver"
@@ -1065,23 +1066,23 @@ func applyColumnMutation(
 				col.GetName(), tableDesc.GetName())
 		}
 
-		newOpts := []tree.SequenceOption{t.SeqOption}
-
+		// It is assummed that an identiy column owns only one sequence.
 		if col.NumUsesSequences() != 1 {
-			return errors.Newf("col.NumUsesSequences() is not 1")
+			return colinfo.NewUndefinedColumnError(string(col.ColName()))
 		}
-		seqID := col.GetUsesSequenceID(0)
 
-		seqDesc, err := params.p.Descriptors().MutableByID(params.p.txn).Table(ctx, seqID)
+		seqDesc, err := params.p.Descriptors().MutableByID(params.p.txn).Table(ctx, col.GetUsesSequenceID(0))
 		if err != nil {
-			return errors.Newf("error resolving sequence dependency %d", seqID)
-		}
-
-		if err := alterSequenceImpl(params, seqDesc, newOpts, t); err != nil {
 			return err
 		}
 
-		// Reference ShowCreateSequence() for SQL representation creation of a sequence
+		// Alter referenced sequence for identity with sepcified option.
+		// Does not override existing values if not specified.
+		if err := alterSequenceImpl(params, seqDesc, []tree.SequenceOption{t.SeqOption}, t); err != nil {
+			return err
+		}
+
+		// Generate sequence options string to be applied in the information_schema.
 		opts := seqDesc.GetSequenceOpts()
 		f := tree.NewFmtCtx(tree.FmtSimple)
 		f.Printf(" MINVALUE %d", opts.MinValue)
@@ -1091,10 +1092,8 @@ func applyColumnMutation(
 		if opts.CacheSize > 1 {
 			f.Printf(" CACHE %d", opts.CacheSize)
 		}
-
 		s := f.CloseAndGetString()
 		col.ColumnDesc().GeneratedAsIdentitySequenceOption = &s
-		return nil
 
 	}
 	return nil

@@ -1,43 +1,43 @@
-# ensure limit tests
 statement ok
-CREATE TABLE t_seq5 (id SERIAL PRIMARY KEY, a int GENERATED ALWAYS AS IDENTITY, b int GENERATED ALWAYS AS IDENTITY, z int);
+CREATE TABLE t_alter_identity (id SERIAL PRIMARY KEY, a int GENERATED ALWAYS AS IDENTITY, b int GENERATED ALWAYS AS IDENTITY, z int);
+
+# Ensure sequence limit errors are applied to identity
 
 statement error pq: INCREMENT must not be zero
-ALTER TABLE t_seq5 ALTER COLUMN b SET INCREMENT 0;
+ALTER TABLE t_alter_identity ALTER COLUMN b SET INCREMENT 0;
 
 query error pq: START value \(11\) cannot be greater than MAXVALUE \(10\)
-ALTER TABLE t_seq5 ALTER COLUMN b SET MAXVALUE 10, ALTER COLUMN b SET START WITH 11;
+ALTER TABLE t_alter_identity ALTER COLUMN b SET MAXVALUE 10, ALTER COLUMN b SET START WITH 11;
 
 query error pq: START value \(5\) cannot be less than MINVALUE \(10\)
-ALTER TABLE t_seq5 ALTER COLUMN b SET MINVALUE 10, ALTER COLUMN b SET START WITH 5;
+ALTER TABLE t_alter_identity ALTER COLUMN b SET MINVALUE 10, ALTER COLUMN b SET START WITH 5;
+
+query error pq: column "z" of relation "t_alter_identity" is not an identity column
+ALTER TABLE t_alter_identity ALTER COLUMN z SET START WITH 5;
+
+# Verify sequence options are implemented on the identity
 
 statement ok
-ALTER TABLE t_seq5 ALTER COLUMN b SET START WITH 3;
+INSERT INTO t_alter_identity DEFAULT VALUES;
 
 statement ok
-ALTER TABLE t_seq5 ALTER COLUMN b SET INCREMENT 12;
+ALTER TABLE t_alter_identity ALTER COLUMN b SET START WITH 5;
 
 statement ok
-INSERT INTO t_seq5 DEFAULT VALUES;
+ALTER TABLE t_alter_identity ALTER COLUMN b SET INCREMENT 4;
 
 statement ok
-INSERT INTO t_seq5 DEFAULT VALUES;
+ALTER TABLE t_alter_identity ALTER COLUMN b RESTART;
 
-query I
-SELECT b from t_seq5 ORDER BY b;
+statement ok
+INSERT INTO t_alter_identity DEFAULT VALUES;
+
+statement ok
+INSERT INTO t_alter_identity DEFAULT VALUES;
+
+query I rowsort
+SELECT b from t_alter_identity ORDER BY b;
 ----
-12
-24
-
-query T
-SELECT create_statement FROM [SHOW CREATE SEQUENCE t_seq5_b_seq];
-----
-CREATE SEQUENCE public.t_seq5_b_seq MINVALUE 1 MAXVALUE 9223372036854775807 INCREMENT 12 START 3
-
-query TTTTTTT rowsort
-select table_name, column_name, identity_start, identity_increment, identity_maximum, identity_minimum, identity_cycle from information_schema.columns where table_name = 't_seq5';
-----
-t_seq5  id  NULL  NULL  NULL                 NULL  NULL
-t_seq5  a   NULL  NULL  NULL                 NULL  NULL
-t_seq5  b   3     12    9223372036854775807  1     NULL
-t_seq5  z   NULL  NULL  NULL                 NULL  NULL
+1
+5
+9

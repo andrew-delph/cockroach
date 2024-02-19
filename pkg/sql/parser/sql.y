@@ -1861,6 +1861,7 @@ alter_ddl_stmt:
 //   ALTER TABLE ... ALTER [COLUMN] <colname> {SET ON UPDATE <expr> | DROP ON UPDATE}
 //   ALTER TABLE ... ALTER [COLUMN] <colname> DROP NOT NULL
 //   ALTER TABLE ... ALTER [COLUMN] <colname> DROP STORED
+//   ALTER TABLE ... ALTER [COLUMN] <colname> SET <sequence_option> | RESTART [ [ WITH ] restart
 //   ALTER TABLE ... ALTER [COLUMN] <colname> [SET DATA] TYPE <type> [COLLATE <collation>]
 //   ALTER TABLE ... ALTER PRIMARY KEY USING COLUMNS ( <colnames...> )
 //   ALTER TABLE ... RENAME TO <newname>

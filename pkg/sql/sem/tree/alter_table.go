@@ -740,7 +740,8 @@ func (node *AlterTableOwner) Format(ctx *FmtCtx) {
 	ctx.FormatNode(&node.Owner)
 }
 
-// AlterTableIdentity represents commands to alter a column identity.
+// AlterTableIdentity represents commands to alter a column identity
+// sequence options.
 type AlterTableIdentity struct {
 	Column    Name
 	SeqOption SequenceOption
