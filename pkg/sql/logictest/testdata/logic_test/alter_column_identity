@@ -1,0 +1,11 @@
+# Verify that GENERATED IDENTITY columns have correct SeqOptions populated in information_schema
+
+statement ok
+CREATE TABLE t_identity_info_schema (a int GENERATED ALWAYS AS IDENTITY, b int GENERATED ALWAYS AS IDENTITY (START WITH 5));
+
+query TTTTTTT rowsort
+select table_name, column_name, identity_start, identity_increment, identity_maximum, identity_minimum, identity_cycle from information_schema.columns where table_name = 't_identity_info_schema';
+----
+t_identity_info_schema  a      1     1     9223372036854775807  1     NULL
+t_identity_info_schema  b      5     1     9223372036854775807  1     NULL
+t_identity_info_schema  rowid  NULL  NULL  NULL                 NULL  NULL
