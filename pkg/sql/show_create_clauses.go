@@ -618,6 +618,11 @@ func ShowCreateSequence(
 	if opts.CacheSize > 1 {
 		f.Printf(" CACHE %d", opts.CacheSize)
 	}
+	if !opts.Cycle {
+		f.Printf(" NO")
+	}
+	f.Printf(" CYCLE")
+
 	return f.CloseAndGetString(), nil
 }
 
