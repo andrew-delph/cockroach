@@ -136,14 +136,14 @@ CREATE SEQUENCE show_create_test
 query ITTITTTTTTTTBBBB colnames
 SELECT * FROM crdb_internal.create_statements WHERE descriptor_name = 'show_create_test'
 ----
-database_id  database_name  schema_name  descriptor_id  descriptor_type  descriptor_name   create_statement                                                                                     state   create_nofks                                                                                         alter_statements  validate_statements  create_redactable                                                                                    has_partitions  is_multi_region  is_virtual  is_temporary
-104          test           public       111            sequence         show_create_test  CREATE SEQUENCE public.show_create_test MINVALUE 1 MAXVALUE 9223372036854775807 INCREMENT 1 START 1  PUBLIC  CREATE SEQUENCE public.show_create_test MINVALUE 1 MAXVALUE 9223372036854775807 INCREMENT 1 START 1  {}                {}                   CREATE SEQUENCE public.show_create_test MINVALUE 1 MAXVALUE 9223372036854775807 INCREMENT 1 START 1  false           false            false       false
+database_id  database_name  schema_name  descriptor_id  descriptor_type  descriptor_name   create_statement                                                                                              state   create_nofks                                                                                                  alter_statements  validate_statements  create_redactable                                                                                             has_partitions  is_multi_region  is_virtual  is_temporary
+104          test           public       111            sequence         show_create_test  CREATE SEQUENCE public.show_create_test MINVALUE 1 MAXVALUE 9223372036854775807 INCREMENT 1 START 1 NO CYCLE  PUBLIC  CREATE SEQUENCE public.show_create_test MINVALUE 1 MAXVALUE 9223372036854775807 INCREMENT 1 START 1 NO CYCLE  {}                {}                   CREATE SEQUENCE public.show_create_test MINVALUE 1 MAXVALUE 9223372036854775807 INCREMENT 1 START 1 NO CYCLE  false           false            false       false
 
 query TT colnames
 SHOW CREATE SEQUENCE show_create_test
 ----
 table_name        create_statement
-show_create_test  CREATE SEQUENCE public.show_create_test MINVALUE 1 MAXVALUE 9223372036854775807 INCREMENT 1 START 1
+show_create_test  CREATE SEQUENCE public.show_create_test MINVALUE 1 MAXVALUE 9223372036854775807 INCREMENT 1 START 1 NO CYCLE
 
 # DML ERRORS
 
@@ -976,7 +976,7 @@ CREATE SEQUENCE sv VIRTUAL
 query T
 SELECT create_statement FROM [SHOW CREATE SEQUENCE sv]
 ----
-CREATE SEQUENCE public.sv MINVALUE 1 MAXVALUE 9223372036854775807 INCREMENT 1 START 1 VIRTUAL
+CREATE SEQUENCE public.sv MINVALUE 1 MAXVALUE 9223372036854775807 INCREMENT 1 START 1 VIRTUAL NO CYCLE
 
 statement ok
 CREATE TABLE svals(x INT)
@@ -1506,7 +1506,7 @@ CREATE SEQUENCE cache_test CACHE 10 INCREMENT 1
 query TT
 SHOW CREATE SEQUENCE cache_test
 ----
-cache_test  CREATE SEQUENCE public.cache_test MINVALUE 1 MAXVALUE 9223372036854775807 INCREMENT 1 START 1 CACHE 10
+cache_test  CREATE SEQUENCE public.cache_test MINVALUE 1 MAXVALUE 9223372036854775807 INCREMENT 1 START 1 CACHE 10 NO CYCLE
 
 # Verify cache invalidation with schema changes.
 
@@ -1961,7 +1961,7 @@ query TT colnames
 SHOW CREATE SEQUENCE seqas_3
 ----
 table_name  create_statement
-seqas_3     CREATE SEQUENCE public.seqas_3 AS INT2 MINVALUE -32768 MAXVALUE -1 INCREMENT -3 START -4
+seqas_3     CREATE SEQUENCE public.seqas_3 AS INT2 MINVALUE -32768 MAXVALUE -1 INCREMENT -3 START -4 NO CYCLE
 
 statement ok
 CREATE SEQUENCE seqas_4 AS integer
@@ -1970,7 +1970,7 @@ query TT colnames
 SHOW CREATE SEQUENCE seqas_4
 ----
 table_name  create_statement
-seqas_4     CREATE SEQUENCE public.seqas_4 AS INT8 MINVALUE 1 MAXVALUE 9223372036854775807 INCREMENT 1 START 1
+seqas_4     CREATE SEQUENCE public.seqas_4 AS INT8 MINVALUE 1 MAXVALUE 9223372036854775807 INCREMENT 1 START 1 NO CYCLE
 
 statement ok
 CREATE SEQUENCE seqas_5 AS int8
@@ -1994,7 +1994,7 @@ query TT colnames
 SHOW CREATE SEQUENCE seqas_9
 ----
 table_name  create_statement
-seqas_9     CREATE SEQUENCE public.seqas_9 AS INT4 MINVALUE 1 MAXVALUE 2147483647 INCREMENT 1 START 1
+seqas_9     CREATE SEQUENCE public.seqas_9 AS INT4 MINVALUE 1 MAXVALUE 2147483647 INCREMENT 1 START 1 NO CYCLE
 
 statement ok
 ALTER SEQUENCE seqas_9 AS smallint
@@ -2003,7 +2003,7 @@ query TT colnames
 SHOW CREATE SEQUENCE seqas_9
 ----
 table_name  create_statement
-seqas_9     CREATE SEQUENCE public.seqas_9 AS INT2 MINVALUE 1 MAXVALUE 32767 INCREMENT 1 START 1
+seqas_9     CREATE SEQUENCE public.seqas_9 AS INT2 MINVALUE 1 MAXVALUE 32767 INCREMENT 1 START 1 NO CYCLE
 
 statement ok
 CREATE SEQUENCE seqas_10
@@ -2017,7 +2017,7 @@ query TT colnames
 SHOW CREATE SEQUENCE seqas_10
 ----
 table_name  create_statement
-seqas_10    CREATE SEQUENCE public.seqas_10 AS INT4 MINVALUE 1 MAXVALUE 9001 INCREMENT 1 START 1
+seqas_10    CREATE SEQUENCE public.seqas_10 AS INT4 MINVALUE 1 MAXVALUE 9001 INCREMENT 1 START 1 NO CYCLE
 
 statement ok
 CREATE SEQUENCE seqas_11 AS integer
@@ -2030,7 +2030,7 @@ CREATE SEQUENCE seqas_11 AS integer
 query T
 SELECT create_statement FROM [SHOW CREATE SEQUENCE seqas_11]
 ----
-CREATE SEQUENCE public.seqas_11 AS INT4 MINVALUE 0 MAXVALUE 234567 INCREMENT 1 START 2
+CREATE SEQUENCE public.seqas_11 AS INT4 MINVALUE 0 MAXVALUE 234567 INCREMENT 1 START 2 NO CYCLE
 
 statement ok
 CREATE SEQUENCE seqas_12 AS smallint
@@ -2040,7 +2040,7 @@ CREATE SEQUENCE seqas_12 AS smallint
 query T
 SELECT create_statement FROM [SHOW CREATE SEQUENCE seqas_12]
 ----
-CREATE SEQUENCE public.seqas_12 AS INT2 MINVALUE -32768 MAXVALUE -1 INCREMENT -3 START -4
+CREATE SEQUENCE public.seqas_12 AS INT2 MINVALUE -32768 MAXVALUE -1 INCREMENT -3 START -4 NO CYCLE
 
 statement ok
 CREATE SEQUENCE seqas_13
@@ -2053,7 +2053,7 @@ CREATE SEQUENCE seqas_13
 query T
 SELECT create_statement FROM [SHOW CREATE SEQUENCE seqas_13]
 ----
-CREATE SEQUENCE public.seqas_13 AS INT4 MINVALUE 1 MAXVALUE 9001 INCREMENT 1 START 1
+CREATE SEQUENCE public.seqas_13 AS INT4 MINVALUE 1 MAXVALUE 9001 INCREMENT 1 START 1 NO CYCLE
 
 statement error START value \(45678\) cannot be greater than MAXVALUE \(32767\)
 CREATE SEQUENCE seq_error AS smallint
