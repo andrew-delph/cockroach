@@ -132,7 +132,6 @@ func AssignSequenceOptions(
 	setDefaults bool,
 	existingType *types.T,
 ) error {
-	wasAscending := opts.Increment > 0
 
 	// Set the default integer type of a sequence.
 	integerType := parser.NakedIntTypeFromDefaultIntSize(defaultIntSize)
@@ -170,33 +169,20 @@ func AssignSequenceOptions(
 		}
 		opts.CacheSize = 1
 	}
-
-	// Set default MINVALUE and MAXVALUE if AS option value for integer type is specified.
-	if opts.AsIntegerType != "" {
-		// We change MINVALUE and MAXVALUE if it is the originally set to the default during ALTER.
-		setMinValue := setDefaults
-		setMaxValue := setDefaults
-		if !setDefaults && existingType != nil {
-			existingLowerIntBound, existingUpperIntBound, err := getSequenceIntegerBounds(existingType)
-			if err != nil {
-				return err
-			}
-			if (wasAscending && opts.MinValue == 1) || (!wasAscending && opts.MinValue == existingLowerIntBound) {
-				setMinValue = true
-			}
-			if (wasAscending && opts.MaxValue == existingUpperIntBound) || (!wasAscending && opts.MaxValue == -1) {
-				setMaxValue = true
-			}
+	// If changing intType and MinValue/MaxValue is the intBound. Then update
+	// the MinValue/MaxValue to the new intBound
+	if !setDefaults && existingType != nil && opts.AsIntegerType != "" {
+		existingLowerIntBound, existingUpperIntBound, err := getSequenceIntegerBounds(existingType)
+		if err != nil {
+			return err
 		}
 
-		if err := setSequenceIntegerBounds(
-			opts,
-			integerType,
-			isAscending,
-			setMinValue,
-			setMaxValue,
-		); err != nil {
-			return err
+		if opts.MinValue == existingLowerIntBound {
+			opts.MinValue = lowerIntBound
+		}
+
+		if opts.MaxValue == existingUpperIntBound {
+			opts.MaxValue = upperIntBound
 		}
 	}
 
@@ -234,13 +220,25 @@ func AssignSequenceOptions(
 		case tree.SeqOptIncrement:
 			// Do nothing; this has already been set.
 		case tree.SeqOptMinValue:
-			// A value of nil represents the user explicitly saying `NO MINVALUE`.
-			if option.IntVal != nil {
+			// A value of nil represents the user explicitly saying `NO MINVALUE` and will fallback to the lowerIntBound.
+			if option.IntVal == nil {
+				if isAscending {
+					opts.MinValue = 1
+				} else {
+					opts.MinValue = lowerIntBound
+				}
+			} else {
 				opts.MinValue = *option.IntVal
 			}
 		case tree.SeqOptMaxValue:
-			// A value of nil represents the user explicitly saying `NO MAXVALUE`.
-			if option.IntVal != nil {
+			// A value of nil represents the user explicitly saying `NO MAXVALUE` and will fallback to the upperIntBound.
+			if option.IntVal == nil {
+				if isAscending {
+					opts.MaxValue = upperIntBound
+				} else {
+					opts.MaxValue = -1
+				}
+			} else {
 				opts.MaxValue = *option.IntVal
 			}
 		case tree.SeqOptStart:
@@ -253,7 +251,7 @@ func AssignSequenceOptions(
 		}
 	}
 
-	if setDefaults || (wasAscending && opts.Start == 1) || (!wasAscending && opts.Start == -1) {
+	if setDefaults {
 		// If start option not specified, set it to MinValue (for ascending sequences)
 		// or MaxValue (for descending sequences).
 		// We only do this if we're setting it for the first time, or the sequence was
