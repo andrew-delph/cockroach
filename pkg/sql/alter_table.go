@@ -1180,6 +1180,43 @@ func applyColumnMutation(
 			}
 			col.ColumnDesc().GeneratedAsIdentityType = catpb.GeneratedAsIdentityType_GENERATED_BY_DEFAULT
 		}
+
+	case *tree.AlterTableIdentity:
+		if !col.IsGeneratedAsIdentity() {
+			return pgerror.Newf(pgcode.ObjectNotInPrerequisiteState,
+				"column %q of relation %q is not an identity column",
+				col.GetName(), tableDesc.GetName())
+		}
+
+		// It is assummed that an identiy column owns only one sequence.
+		if col.NumUsesSequences() != 1 {
+			return errors.AssertionFailedf("TODO")
+		}
+
+		seqDesc, err := params.p.Descriptors().MutableByID(params.p.txn).Table(ctx, col.GetUsesSequenceID(0))
+		if err != nil {
+			return err
+		}
+
+		// Alter referenced sequence for identity with sepcified option.
+		// Does not override existing values if not specified.
+		if err := alterSequenceImpl(params, seqDesc, t.SeqOptions, t); err != nil {
+			return err
+		}
+
+		// Generate sequence options string to be applied in the information_schema.
+		opts := seqDesc.GetSequenceOpts()
+		f := tree.NewFmtCtx(tree.FmtSimple)
+		f.Printf(" MINVALUE %d", opts.MinValue)
+		f.Printf(" MAXVALUE %d", opts.MaxValue)
+		f.Printf(" INCREMENT %d", opts.Increment)
+		f.Printf(" START %d", opts.Start)
+		if opts.CacheSize > 1 {
+			f.Printf(" CACHE %d", opts.CacheSize)
+		}
+		s := f.CloseAndGetString()
+		col.ColumnDesc().GeneratedAsIdentitySequenceOption = &s
+
 	}
 	return nil
 }
