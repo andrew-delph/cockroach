@@ -505,10 +505,11 @@ func (db *DB) Inc(ctx context.Context, key interface{}, value int64) (KeyValue, 
 }
 
 // IncWithBounds fdsfss
-func (db *DB) IncWithBounds(ctx context.Context, key interface{}, value, minValue, maxValue int64) (KeyValue, error) {
+func (db *DB) IncWithBounds(ctx context.Context, key interface{}, value, minValue, maxValue int64) ([]Result, error) {
 	b := &Batch{}
 	b.IncWithBounds(key, value, minValue, maxValue)
-	return getOneRow(db.Run(ctx, b), b)
+	// b.raw = true
+	return getResults(db.Run(ctx, b), b)
 }
 
 func (db *DB) scan(
@@ -1177,6 +1178,20 @@ func getOneResult(runErr error, b *Batch) (Result, error) {
 	return res, nil
 }
 
+func getResults(runErr error, b *Batch) ([]Result, error) {
+	if runErr != nil {
+		if len(b.Results) > 0 {
+			return b.Results, b.Results[0].Err
+		}
+		return []Result{Result{Err: runErr}}, runErr
+	}
+	res := b.Results[0]
+	if res.Err != nil {
+		panic("run succeeded even through the result has an error")
+	}
+	return b.Results, nil
+}
+
 // getOneRow returns the first row for a single-request Batch that was run.
 // runErr is the error returned by Run, b is the Batch that was passed to Run.
 func getOneRow(runErr error, b *Batch) (KeyValue, error) {
@@ -1208,9 +1223,9 @@ func IncrementValRetryable(ctx context.Context, db *DB, key roachpb.Key, inc int
 	return res.ValueInt(), err
 }
 
-func IncrementWithBoundsValRetryable(ctx context.Context, db *DB, key roachpb.Key, inc, minValue, maxValue int64) (int64, error) {
+func IncrementWithBoundsValRetryable(ctx context.Context, db *DB, key roachpb.Key, inc, minValue, maxValue int64) ([]Result, error) {
 	var err error
-	var res KeyValue
+	var res []Result
 	retryOpts := base.DefaultRetryOptions()
 	retryOpts.Closer = db.Context().Stopper.ShouldQuiesce()
 	for r := retry.StartWithCtx(ctx, retryOpts); r.Next(); {
@@ -1221,5 +1236,5 @@ func IncrementWithBoundsValRetryable(ctx context.Context, db *DB, key roachpb.Ke
 		}
 		break
 	}
-	return res.ValueInt(), err
+	return res, err
 }

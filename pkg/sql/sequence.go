@@ -164,14 +164,28 @@ func (p *planner) incrementSequenceUsingCache(
 		// This matches the specification at
 		// https://www.postgresql.org/docs/14/functions-sequence.html.
 		var endValue int64
-		if createdInCurrentTxn {
-			var res kv.KeyValue
-			res, err = p.txn.IncWithBounds(ctx, seqValueKey, seqOpts.Increment*cacheSize, seqOpts.MinValue, seqOpts.MaxValue)
-			endValue = res.ValueInt()
-		} else {
-			endValue, err = kv.IncrementWithBoundsValRetryable(
-				ctx, p.ExecCfg().DB, seqValueKey, seqOpts.Increment*cacheSize, seqOpts.MinValue, seqOpts.MaxValue)
+		var result []kv.Result
+		// if createdInCurrentTxn {
+		// 	var res kv.KeyValue
+		// 	res, err = p.txn.IncWithBounds(ctx, seqValueKey, seqOpts.Increment*cacheSize, seqOpts.MinValue, seqOpts.MaxValue)
+		// 	endValue = res.ValueInt()
+		// } else {
+		// 	endValue, err = kv.IncrementWithBoundsValRetryable(
+		// 		ctx, p.ExecCfg().DB, seqValueKey, seqOpts.Increment*cacheSize, seqOpts.MinValue, seqOpts.MaxValue)
+		// }
+
+		result, err = kv.IncrementWithBoundsValRetryable(
+			ctx, p.ExecCfg().DB, seqValueKey, seqOpts.Increment*cacheSize, seqOpts.MinValue, seqOpts.MaxValue)
+
+		fmt.Printf("\n\n\n=========================== %d %d %#v\n", len(result), len(result[0].Rows), result)
+
+		for i := 0; i < len(result[0].Rows); i++ {
+			row := result[0].Rows[i]
+			// v, _ := row.Value.GetInt()
+			fmt.Printf(">>> %d : %#v\n", i, row)
 		}
+
+		fmt.Printf("\n\n\n")
 
 		if err != nil {
 			if errors.HasType(err, (*kvpb.IntegerOverflowError)(nil)) {

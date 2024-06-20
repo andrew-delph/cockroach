@@ -746,6 +746,9 @@ func (b *Batch) IncWithBounds(key interface{}, value, minValue, maxValue int64) 
 		b.initResult(0, 1, notRaw, err)
 		return
 	}
+	// 2 rows, or 2 values?
+	// b.appendReqs(kvpb.NewLockingGet(k))
+	b.GetForUpdate(k, kvpb.BestEffort)
 	b.appendReqs(kvpb.NewIncrementWithBounds(k, value, minValue, maxValue))
 	b.initResult(1, 1, notRaw, nil)
 }

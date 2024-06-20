@@ -12,7 +12,6 @@ package batcheval
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/cockroachdb/cockroach/pkg/kv/kvpb"
 	"github.com/cockroachdb/cockroach/pkg/kv/kvserver/batcheval/result"
@@ -34,7 +33,7 @@ func Increment(
 	args := cArgs.Args.(*kvpb.IncrementRequest)
 	h := cArgs.Header
 	reply := resp.(*kvpb.IncrementResponse)
-	fmt.Printf("!!!!!!!!!!!!!!!\n!!!!!!!!!!!!!!!\n!!!!!!!!!!!!!!!\n!!!!!!!!!!!!!!!\n")
+	// fmt.Printf("!!!!!!!!!!!!!!!\n!!!!!!!!!!!!!!!\n!!!!!!!!!!!!!!!\n!!!!!!!!!!!!!!!\n")
 	opts := storage.MVCCWriteOptions{
 		Txn:                            h.Txn,
 		LocalTimestamp:                 cArgs.Now,

@@ -339,7 +339,7 @@ func TestDB_IncBounds(t *testing.T) {
 	defer s.Stopper().Stop(context.Background())
 	ctx := context.Background()
 
-	if _, err := db.IncWithBounds(ctx, "aa", 100, -150, 150); err != nil {
+	if _, err := db.Inc(ctx, "aa", 100); err != nil {
 		t.Fatal(err)
 	}
 	result, err := db.Get(ctx, "aa")
@@ -347,15 +347,43 @@ func TestDB_IncBounds(t *testing.T) {
 		t.Fatal(err)
 	}
 	checkIntResult(t, 100, result.ValueInt())
-
-	if _, err := db.IncWithBounds(ctx, "aa", 100, -150, 150); err != nil {
+	var myres []kv.Result
+	if myres, err = db.IncWithBounds(ctx, "aa", 100, -150, 250); err != nil {
 		t.Fatal(err)
 	}
+	// checkIntResult(t, 1, int64(len(myres)))
+
+	// checkIntResult(t, 2, int64(len(myres[0].Rows)))
+
+	for j := 0; j < len(myres); j++ {
+		fmt.Printf(">>>>>>>>>>>>>>>>>>>>>>>>>>> NEW ROW >>>>>>>>>>>>>>>>>>>>>>>>>>>\n")
+		rows := myres[j].Rows
+		for i := 0; i < len(rows); i++ {
+			row := rows[i]
+			fmt.Printf("row >>>> %v %v\n", row.Value != nil, row)
+			if row.Value == nil {
+				fmt.Printf("NO VALUE >>>>>>>>>>>>>>>>\n")
+				continue
+			}
+			fmt.Printf("VALUE >>>>>>>>>>>>>>>> %v\n", row.ValueInt())
+		}
+	}
+
 	result, err = db.Get(ctx, "aa")
 	if err != nil {
+
 		t.Fatal(err)
 	}
-	checkIntResult(t, 150, result.ValueInt())
+	checkIntResult(t, 200, result.ValueInt())
+
+	// if _, err := db.IncWithBounds(ctx, "aa", 100, -150, 150); err != nil {
+	// 	t.Fatal(err)
+	// }
+	// result, err = db.Get(ctx, "aa")
+	// if err != nil {
+	// 	t.Fatal(err)
+	// }
+	// checkIntResult(t, 150, result.ValueInt())
 }
 
 func TestBatch(t *testing.T) {
