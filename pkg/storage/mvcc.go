@@ -2795,7 +2795,11 @@ func MVCCIncrement(
 	timestamp hlc.Timestamp,
 	opts MVCCWriteOptions,
 	inc int64,
+	withBounds bool,
+	minValue int64,
+	maxValue int64,
 ) (int64, roachpb.LockAcquisition, error) {
+
 	iter, err := newMVCCIterator(
 		ctx, rw, timestamp, false /* rangeKeyMasking */, true, /* noInterleavedIntents */
 		IterOptions{
@@ -2841,6 +2845,11 @@ func MVCCIncrement(
 			}
 		}
 		newInt64Val = int64Val + inc
+		fmt.Printf(">>>>>>>>>>>>>>>%v,%d,%d,%d\n", withBounds, newInt64Val, minValue, maxValue)
+		// change goes here
+		if withBounds {
+			newInt64Val = adjsutToBounds(newInt64Val, minValue, maxValue)
+		}
 
 		newValue := roachpb.Value{}
 		newValue.SetInt(newInt64Val)
@@ -7175,6 +7184,30 @@ func willOverflow(a, b int64) bool {
 		return a > math.MaxInt64-b
 	}
 	return math.MinInt64-b > a
+}
+
+func willOverflowBounds(a, b, minValue, maxValue int64) bool {
+	// Morally MinInt64 < a+b < MaxInt64, but without overflows.
+	// First make sure that a <= b. If not, swap them.
+	if a > b {
+		a, b = b, a
+	}
+	// Now b is the larger of the numbers, and we compare sizes
+	// in a way that can never over- or underflow.
+	if b > 0 {
+		return a > maxValue-b
+	}
+	return minValue-b > a
+}
+
+func adjsutToBounds(value, minValue, maxValue int64) int64 {
+	if value > maxValue {
+		value = maxValue
+	}
+	if value < minValue {
+		value = minValue
+	}
+	return value
 }
 
 // ComputeStats scans the given key span and computes MVCC stats. nowNanos

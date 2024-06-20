@@ -166,11 +166,11 @@ func (p *planner) incrementSequenceUsingCache(
 		var endValue int64
 		if createdInCurrentTxn {
 			var res kv.KeyValue
-			res, err = p.txn.Inc(ctx, seqValueKey, seqOpts.Increment*cacheSize)
+			res, err = p.txn.IncWithBounds(ctx, seqValueKey, seqOpts.Increment*cacheSize, seqOpts.MinValue, seqOpts.MaxValue)
 			endValue = res.ValueInt()
 		} else {
-			endValue, err = kv.IncrementValRetryable(
-				ctx, p.ExecCfg().DB, seqValueKey, seqOpts.Increment*cacheSize)
+			endValue, err = kv.IncrementWithBoundsValRetryable(
+				ctx, p.ExecCfg().DB, seqValueKey, seqOpts.Increment*cacheSize, seqOpts.MinValue, seqOpts.MaxValue)
 		}
 
 		if err != nil {

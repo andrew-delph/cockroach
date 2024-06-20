@@ -306,6 +306,7 @@ func TestDB_InitPut(t *testing.T) {
 }
 
 func TestDB_Inc(t *testing.T) {
+	// return
 	defer leaktest.AfterTest(t)()
 	defer log.Scope(t).Close(t)
 	s, db := setup(t)
@@ -320,6 +321,41 @@ func TestDB_Inc(t *testing.T) {
 		t.Fatal(err)
 	}
 	checkIntResult(t, 100, result.ValueInt())
+
+	if _, err := db.Inc(ctx, "aa", 100); err != nil {
+		t.Fatal(err)
+	}
+	result, err = db.Get(ctx, "aa")
+	if err != nil {
+		t.Fatal(err)
+	}
+	checkIntResult(t, 200, result.ValueInt())
+}
+
+func TestDB_IncBounds(t *testing.T) {
+	defer leaktest.AfterTest(t)()
+	defer log.Scope(t).Close(t)
+	s, db := setup(t)
+	defer s.Stopper().Stop(context.Background())
+	ctx := context.Background()
+
+	if _, err := db.IncWithBounds(ctx, "aa", 100, -150, 150); err != nil {
+		t.Fatal(err)
+	}
+	result, err := db.Get(ctx, "aa")
+	if err != nil {
+		t.Fatal(err)
+	}
+	checkIntResult(t, 100, result.ValueInt())
+
+	if _, err := db.IncWithBounds(ctx, "aa", 100, -150, 150); err != nil {
+		t.Fatal(err)
+	}
+	result, err = db.Get(ctx, "aa")
+	if err != nil {
+		t.Fatal(err)
+	}
+	checkIntResult(t, 150, result.ValueInt())
 }
 
 func TestBatch(t *testing.T) {

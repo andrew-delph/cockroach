@@ -1583,7 +1583,7 @@ func cmdIncrement(e *evalCtx) error {
 			ReplayWriteTimestampProtection: e.getAmbiguousReplay(),
 			MaxLockConflicts:               e.getMaxLockConflicts(),
 		}
-		curVal, acq, err := storage.MVCCIncrement(e.ctx, rw, key, ts, opts, inc)
+		curVal, acq, err := storage.MVCCIncrement(e.ctx, rw, key, ts, opts, inc, false, 0, 0)
 		if err != nil {
 			return err
 		}

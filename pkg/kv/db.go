@@ -504,6 +504,13 @@ func (db *DB) Inc(ctx context.Context, key interface{}, value int64) (KeyValue, 
 	return getOneRow(db.Run(ctx, b), b)
 }
 
+// IncWithBounds fdsfss
+func (db *DB) IncWithBounds(ctx context.Context, key interface{}, value, minValue, maxValue int64) (KeyValue, error) {
+	b := &Batch{}
+	b.IncWithBounds(key, value, minValue, maxValue)
+	return getOneRow(db.Run(ctx, b), b)
+}
+
 func (db *DB) scan(
 	ctx context.Context,
 	begin, end interface{},
@@ -1192,6 +1199,22 @@ func IncrementValRetryable(ctx context.Context, db *DB, key roachpb.Key, inc int
 	retryOpts.Closer = db.Context().Stopper.ShouldQuiesce()
 	for r := retry.StartWithCtx(ctx, retryOpts); r.Next(); {
 		res, err = db.Inc(ctx, key, inc)
+		if errors.HasType(err, (*kvpb.UnhandledRetryableError)(nil)) ||
+			errors.HasType(err, (*kvpb.AmbiguousResultError)(nil)) {
+			continue
+		}
+		break
+	}
+	return res.ValueInt(), err
+}
+
+func IncrementWithBoundsValRetryable(ctx context.Context, db *DB, key roachpb.Key, inc, minValue, maxValue int64) (int64, error) {
+	var err error
+	var res KeyValue
+	retryOpts := base.DefaultRetryOptions()
+	retryOpts.Closer = db.Context().Stopper.ShouldQuiesce()
+	for r := retry.StartWithCtx(ctx, retryOpts); r.Next(); {
+		res, err = db.IncWithBounds(ctx, key, inc, minValue, maxValue)
 		if errors.HasType(err, (*kvpb.UnhandledRetryableError)(nil)) ||
 			errors.HasType(err, (*kvpb.AmbiguousResultError)(nil)) {
 			continue
