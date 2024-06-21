@@ -351,16 +351,19 @@ func TestDB_IncBounds(t *testing.T) {
 	// }
 	// checkIntResult(t, 100, result.ValueInt())
 
-	if _, err := db.IncWithBounds(ctx, "aa", 100, -150, 150); err != nil {
+	if myres, err = db.IncWithBounds(ctx, "aa", 100, -150, 150); err != nil {
 		t.Fatal(err)
 	}
 	// checkIntResult(t, 1, int64(len(myres)))
 
 	// checkIntResult(t, 2, int64(len(myres[0].Rows)))
-
+	fmt.Printf("\n\n\n--------------------------------------------\n\n\n")
+	fmt.Printf("myres: %d\n", len(myres))
 	for j := 0; j < len(myres); j++ {
 		fmt.Printf(">>>>>>>>>>>>>>>>>>>>>>>>>>> NEW ROW >>>>>>>>>>>>>>>>>>>>>>>>>>>\n")
 		rows := myres[j].Rows
+		fmt.Printf("rows: %d\n", len(rows))
+
 		for i := 0; i < len(rows); i++ {
 			row := rows[i]
 			fmt.Printf("row >>>> %v %v\n", row.Value != nil, row)
@@ -371,6 +374,8 @@ func TestDB_IncBounds(t *testing.T) {
 			fmt.Printf("VALUE >>>>>>>>>>>>>>>> %v\n", row.ValueInt())
 		}
 	}
+
+	fmt.Printf("\n\n\n==============================================\n\n\n")
 
 	result, err = db.Get(ctx, "aa")
 	if err != nil {
@@ -379,7 +384,7 @@ func TestDB_IncBounds(t *testing.T) {
 	}
 	checkIntResult(t, 100, result.ValueInt())
 
-	if _, err := db.IncWithBounds(ctx, "aa", 100, -150, 150); err != nil {
+	if myres, err = db.IncWithBounds(ctx, "aa", 100, -150, 150); err != nil {
 		t.Fatal(err)
 	}
 	result, err = db.Get(ctx, "aa")
@@ -388,9 +393,13 @@ func TestDB_IncBounds(t *testing.T) {
 	}
 	checkIntResult(t, 150, result.ValueInt())
 
+	fmt.Printf("\n\n\n2222222222--------------------------------------------\n\n\n")
+	fmt.Printf("myres: %d\n", len(myres))
 	for j := 0; j < len(myres); j++ {
 		fmt.Printf(">>>>>>>>>>>>>>>>>>>>>>>>>>> NEW ROW >>>>>>>>>>>>>>>>>>>>>>>>>>>\n")
 		rows := myres[j].Rows
+		fmt.Printf("rows: %d\n", len(rows))
+
 		for i := 0; i < len(rows); i++ {
 			row := rows[i]
 			fmt.Printf("row >>>> %v %v\n", row.Value != nil, row)
@@ -401,6 +410,8 @@ func TestDB_IncBounds(t *testing.T) {
 			fmt.Printf("VALUE >>>>>>>>>>>>>>>> %v\n", row.ValueInt())
 		}
 	}
+
+	fmt.Printf("\n\n\n2222222222=============================================\n\n\n")
 }
 
 func TestBatch(t *testing.T) {

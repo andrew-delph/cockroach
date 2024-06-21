@@ -181,11 +181,15 @@ func (p *planner) incrementSequenceUsingCache(
 
 		for i := 0; i < len(result[0].Rows); i++ {
 			row := result[0].Rows[i]
+			if row.Exists() {
+				endValue, _ = row.Value.GetInt()
+			}
+			break
 			// v, _ := row.Value.GetInt()
 			fmt.Printf(">>> %d : %#v\n", i, row)
 		}
 
-		fmt.Printf("\n\n\n")
+		fmt.Printf("\n\n\n endValue : %d \n\n\n", endValue)
 
 		if err != nil {
 			if errors.HasType(err, (*kvpb.IntegerOverflowError)(nil)) {
