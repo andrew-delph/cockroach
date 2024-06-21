@@ -2858,6 +2858,7 @@ func MVCCIncrement(
 	}
 
 	acq, err := mvccPutUsingIter(ctx, rw, iter, ltScanner, key, timestamp, noValue, valueFn, opts)
+	fmt.Printf("             newInt64Val : %v             int64Val : %v\n", newInt64Val, int64Val)
 	return newInt64Val, acq, err
 }
 

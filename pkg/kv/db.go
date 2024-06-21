@@ -508,8 +508,18 @@ func (db *DB) Inc(ctx context.Context, key interface{}, value int64) (KeyValue, 
 func (db *DB) IncWithBounds(ctx context.Context, key interface{}, value, minValue, maxValue int64) ([]Result, error) {
 	b := &Batch{}
 	b.IncWithBounds(key, value, minValue, maxValue)
-	// b.raw = true
 	return getResults(db.Run(ctx, b), b)
+}
+
+// IncWithBounds fdsfss
+func (db *DB) IncWithBounds2(ctx context.Context, key interface{}, value, minValue, maxValue int64) (KeyValue, KeyValue, error) {
+	b := &Batch{}
+	b.IncWithBounds(key, value, minValue, maxValue)
+	res, err := getResults(db.Run(ctx, b), b)
+	if err != nil {
+		return KeyValue{}, KeyValue{}, err
+	}
+	return res[0].Rows[0], res[1].Rows[0], nil
 }
 
 func (db *DB) scan(
@@ -1223,18 +1233,19 @@ func IncrementValRetryable(ctx context.Context, db *DB, key roachpb.Key, inc int
 	return res.ValueInt(), err
 }
 
-func IncrementWithBoundsValRetryable(ctx context.Context, db *DB, key roachpb.Key, inc, minValue, maxValue int64) ([]Result, error) {
+func IncrementWithBoundsValRetryable(ctx context.Context, db *DB, key roachpb.Key, inc, minValue, maxValue int64) (KeyValue, KeyValue, error) {
 	var err error
-	var res []Result
+	var res1 KeyValue
+	var res2 KeyValue
 	retryOpts := base.DefaultRetryOptions()
 	retryOpts.Closer = db.Context().Stopper.ShouldQuiesce()
 	for r := retry.StartWithCtx(ctx, retryOpts); r.Next(); {
-		res, err = db.IncWithBounds(ctx, key, inc, minValue, maxValue)
+		res1, res2, err = db.IncWithBounds2(ctx, key, inc, minValue, maxValue)
 		if errors.HasType(err, (*kvpb.UnhandledRetryableError)(nil)) ||
 			errors.HasType(err, (*kvpb.AmbiguousResultError)(nil)) {
 			continue
 		}
 		break
 	}
-	return res, err
+	return res1, res2, err
 }
