@@ -118,6 +118,22 @@ func AlterColumnType(
 		// We have to follow the process to create a new column and backfill it
 		// using the expression.
 		kind = schemachange.ColumnConversionGeneral
+		oldColComputeExpr := tree.CastExpr{
+			Expr:       &tree.ColumnItem{ColumnName: tree.Name(col.GetName())},
+			Type:       typ,
+			SyntaxMode: tree.CastShort,
+		}
+		tree.Expr
+		inverseExpr := tree.Serialize(&oldColComputeExpr)
+		usingExpr := tree.Serialize(t.Using)
+		if inverseExpr == usingExpr {
+			kind, err = schemachange.ClassifyConversion(ctx, col.GetType(), typ)
+			if err != nil {
+				return err
+			}
+		} else {
+			kind = schemachange.ColumnConversionGeneral
+		}
 	} else {
 		kind, err = schemachange.ClassifyConversion(ctx, col.GetType(), typ)
 		if err != nil {
@@ -291,6 +307,8 @@ func alterColumnTypeGeneral(
 			tn,
 			params.ExecCfg().Settings.Version.ActiveVersion(ctx),
 		)
+
+		// err = errors.Newf("expr = %v toType = %v tp2 = %v using = %v", expr, toType, tp2, using)
 
 		if err != nil {
 			return err
