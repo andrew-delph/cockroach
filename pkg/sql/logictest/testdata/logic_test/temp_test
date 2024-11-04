@@ -1,0 +1,13 @@
+
+statement ok
+GRANT admin TO testuser
+
+user testuser
+
+statement ok
+CREATE SEQUENCE foo
+
+query I
+SELECT nextval('foo')
+----
+1

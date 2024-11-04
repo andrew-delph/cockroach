@@ -2102,6 +2102,13 @@ func TestRepeatableReadLogic_temp_table_txn(
 	runLogicTest(t, "temp_table_txn")
 }
 
+func TestRepeatableReadLogic_temp_test(
+	t *testing.T,
+) {
+	defer leaktest.AfterTest(t)()
+	runLogicTest(t, "temp_test")
+}
+
 func TestRepeatableReadLogic_tenant(
 	t *testing.T,
 ) {

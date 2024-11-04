@@ -1788,6 +1788,11 @@ func TestSchemaChangeComparator_temp_table_txn(t *testing.T) {
 	var logicTestFile = "pkg/sql/logictest/testdata/logic_test/temp_table_txn"
 	runSchemaChangeComparatorTest(t, logicTestFile)
 }
+func TestSchemaChangeComparator_temp_test(t *testing.T) {
+	defer leaktest.AfterTest(t)()
+	var logicTestFile = "pkg/sql/logictest/testdata/logic_test/temp_test"
+	runSchemaChangeComparatorTest(t, logicTestFile)
+}
 func TestSchemaChangeComparator_tenant(t *testing.T) {
 	defer leaktest.AfterTest(t)()
 	var logicTestFile = "pkg/sql/logictest/testdata/logic_test/tenant"
