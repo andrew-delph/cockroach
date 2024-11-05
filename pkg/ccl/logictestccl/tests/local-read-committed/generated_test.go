@@ -2109,6 +2109,13 @@ func TestReadCommittedLogic_temp_table_txn(
 	runLogicTest(t, "temp_table_txn")
 }
 
+func TestReadCommittedLogic_temp_test(
+	t *testing.T,
+) {
+	defer leaktest.AfterTest(t)()
+	runLogicTest(t, "temp_test")
+}
+
 func TestReadCommittedLogic_tenant(
 	t *testing.T,
 ) {
