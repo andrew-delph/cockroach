@@ -14,6 +14,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/cockroachdb/cockroach/pkg/base"
 	"github.com/cockroachdb/cockroach/pkg/keys"
 	"github.com/cockroachdb/cockroach/pkg/kv"
 	"github.com/cockroachdb/cockroach/pkg/kv/kvpb"
@@ -34,6 +35,7 @@ import (
 	"github.com/cockroachdb/cockroach/pkg/sql/sqlerrors"
 	"github.com/cockroachdb/cockroach/pkg/sql/types"
 	"github.com/cockroachdb/cockroach/pkg/util/log"
+	"github.com/cockroachdb/cockroach/pkg/util/retry"
 	"github.com/cockroachdb/errors"
 )
 
@@ -246,11 +248,28 @@ func (p *planner) incrementSequenceUsingCache(
 			return 0, err
 		}
 	} else {
+		fetchNextValuesRetry := func() (nextValue, incrementAmount, sizeOfCache int64, err error) {
+			retryOpts := base.DefaultRetryOptions()
+			retryOpts.Closer = p.ExecCfg().DB.Context().Stopper.ShouldQuiesce()
+			for r := retry.StartWithCtx(ctx, retryOpts); r.Next(); {
+				nextValue, incrementAmount, sizeOfCache, err = fetchNextValues()
+				if err != nil {
+					panic(fmt.Sprintf("%s .. %s", "andrew: the error happened", err))
+				}
+				// if errors.HasType(err, (*kvpb.UnhandledRetryableError)(nil)) ||
+				// 	errors.HasType(err, (*kvpb.AmbiguousResultError)(nil)) {
+				// 	continue
+				// }
+				break
+			}
+			return nextValue, incrementAmount, sizeOfCache, err
+		}
+		fetchNextValuesRetry = fetchNextValues // can a test be made to verify this is working?
 		// If cache size option is 1 (default -> not cached), and node cache size option is not 0 (not default -> node-cached), then use node-level cache
 		if seqOpts.CacheSize == 1 && seqOpts.NodeCacheSize != 0 {
-			val, err = p.GetSequenceCacheNode().NextValue(sequenceID, uint32(descriptor.GetVersion()), fetchNextValues)
+			val, err = p.GetSequenceCacheNode().NextValue(sequenceID, uint32(descriptor.GetVersion()), fetchNextValuesRetry)
 		} else {
-			val, err = p.GetOrInitSequenceCache().NextValue(uint32(sequenceID), uint32(descriptor.GetVersion()), fetchNextValues)
+			val, err = p.GetOrInitSequenceCache().NextValue(uint32(sequenceID), uint32(descriptor.GetVersion()), fetchNextValuesRetry)
 		}
 		if err != nil {
 			return 0, err
