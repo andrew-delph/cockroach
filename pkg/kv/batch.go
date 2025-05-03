@@ -734,6 +734,20 @@ func (b *Batch) Inc(key interface{}, value int64) {
 	b.initResult(1, 1, notRaw, nil)
 }
 
+// IncWithBounds ... dsd
+func (b *Batch) IncWithBounds(key interface{}, value, minValue, maxValue int64) {
+	k, err := marshalKey(key)
+	if err != nil {
+		b.initResult(0, 1, notRaw, err)
+		return
+	}
+	// 2 rows, or 2 values?
+	// b.appendReqs(kvpb.NewLockingGet(k))
+	b.GetForUpdate(k, kvpb.BestEffort)
+	b.appendReqs(kvpb.NewIncrementWithBounds(k, value, minValue, maxValue))
+	b.initResult(1, 1, notRaw, nil)
+}
+
 func (b *Batch) scan(
 	s, e interface{},
 	isReverse bool,

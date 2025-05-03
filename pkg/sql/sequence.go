@@ -165,14 +165,32 @@ func (p *planner) incrementSequenceUsingCache(
 		// This matches the specification at
 		// https://www.postgresql.org/docs/14/functions-sequence.html.
 		var endValue int64
-		if createdInCurrentTxn {
-			var res kv.KeyValue
-			res, err = p.txn.Inc(ctx, seqValueKey, seqOpts.Increment*cacheSize)
-			endValue = res.ValueInt()
-		} else {
-			endValue, err = kv.IncrementValRetryable(
-				ctx, p.ExecCfg().DB, seqValueKey, seqOpts.Increment*cacheSize)
-		}
+		// var result []kv.Result
+		var res1 kv.KeyValue
+		var res2 kv.KeyValue
+		// if createdInCurrentTxn {
+		// 	var res kv.KeyValue
+		// 	res, err = p.txn.IncWithBounds(ctx, seqValueKey, seqOpts.Increment*cacheSize, seqOpts.MinValue, seqOpts.MaxValue)
+		// 	endValue = res.ValueInt()
+		// } else {
+		// 	endValue, err = kv.IncrementWithBoundsValRetryable(
+		// 		ctx, p.ExecCfg().DB, seqValueKey, seqOpts.Increment*cacheSize, seqOpts.MinValue, seqOpts.MaxValue)
+		// }
+
+		res1, res2, err = kv.IncrementWithBoundsValRetryable(
+			ctx, p.ExecCfg().DB, seqValueKey, seqOpts.Increment*cacheSize, seqOpts.MinValue, seqOpts.MaxValue)
+
+		// fmt.Printf("\n\n\n=========================== %d %d %d %d %d %d %d\n", len(result), len(result[0].Rows), seqOpts.MinValue, seqOpts.MaxValue, seqOpts.Increment, cacheSize, seqOpts.Increment*cacheSize)
+
+		// for i := 0; i < len(result[0].Rows); i++ {
+		// 	row := result[0].Rows[i]
+		// 	if row.Exists() {
+		// 		endValue, _ = row.Value.GetInt()
+		// 	}
+		// 	break
+		// 	// v, _ := row.Value.GetInt()
+		// 	fmt.Printf(">>> %d : %#v\n", i, row)
+		// }
 
 		if err != nil {
 			if errors.HasType(err, (*kvpb.IntegerOverflowError)(nil)) {
@@ -180,6 +198,21 @@ func (p *planner) incrementSequenceUsingCache(
 			}
 			return 0, 0, 0, err
 		}
+
+		if res2.Exists() == false {
+			return 0, 0, 0, errors.New("res2 does not exist")
+		}
+
+		endValue, _ = res2.Value.GetInt()
+
+		fmt.Printf("\n\n\n endValue : %d \n\n\n", endValue)
+
+		if res1.Exists() {
+			v, _ := res1.Value.GetInt()
+			fmt.Printf("res1 VALUE %v\n", v)
+
+		}
+		fmt.Printf("res1 %v\n", res1.Exists())
 
 		// This sequence has exceeded its bounds after performing this increment.
 		if endValue > seqOpts.MaxValue || endValue < seqOpts.MinValue {

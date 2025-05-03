@@ -28,7 +28,7 @@ func Increment(
 	args := cArgs.Args.(*kvpb.IncrementRequest)
 	h := cArgs.Header
 	reply := resp.(*kvpb.IncrementResponse)
-
+	// fmt.Printf("!!!!!!!!!!!!!!!\n!!!!!!!!!!!!!!!\n!!!!!!!!!!!!!!!\n!!!!!!!!!!!!!!!\n")
 	opts := storage.MVCCWriteOptions{
 		Txn:                            h.Txn,
 		LocalTimestamp:                 cArgs.Now,
@@ -45,9 +45,40 @@ func Increment(
 	var err error
 	var acq roachpb.LockAcquisition
 	reply.NewValue, acq, err = storage.MVCCIncrement(
-		ctx, readWriter, args.Key, h.Timestamp, opts, args.Increment)
+		ctx, readWriter, args.Key, h.Timestamp, opts, args.Increment, args.WithBounds, args.MinValue, args.MaxValue)
 	if err != nil {
 		return result.Result{}, err
 	}
 	return result.WithAcquiredLocks(acq), nil
 }
+
+// // Increment increments the value (interpreted as varint64 encoded) and
+// // returns the newly incremented value (encoded as varint64). If no value
+// // exists for the key, zero is incremented.
+// func IncrementWithBounds( // this is not used.
+// 	ctx context.Context, readWriter storage.ReadWriter, cArgs CommandArgs, resp kvpb.Response,
+// ) (result.Result, error) {
+// 	args := cArgs.Args.(*kvpb.IncrementRequest)
+// 	h := cArgs.Header
+// 	reply := resp.(*kvpb.IncrementResponse)
+
+// 	opts := storage.MVCCWriteOptions{
+// 		Txn:                            h.Txn,
+// 		LocalTimestamp:                 cArgs.Now,
+// 		Stats:                          cArgs.Stats,
+// 		ReplayWriteTimestampProtection: h.AmbiguousReplayProtection,
+// 		OmitInRangefeeds:               cArgs.OmitInRangefeeds,
+// 		MaxLockConflicts:               storage.MaxConflictsPerLockConflictError.Get(&cArgs.EvalCtx.ClusterSettings().SV),
+// 		TargetLockConflictBytes:        storage.TargetBytesPerLockConflictError.Get(&cArgs.EvalCtx.ClusterSettings().SV),
+// 		Category:                       fs.BatchEvalReadCategory,
+// 	}
+
+// 	var err error
+// 	var acq roachpb.LockAcquisition
+// 	reply.NewValue, acq, err = storage.MVCCIncrement(
+// 		ctx, readWriter, args.Key, h.Timestamp, opts, args.Increment, true, args.MinValue, args.MaxValue)
+// 	if err != nil {
+// 		return result.Result{}, err
+// 	}
+// 	return result.WithAcquiredLocks(acq), nil
+// }

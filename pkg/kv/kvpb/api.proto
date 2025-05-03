@@ -393,6 +393,9 @@ message InitPutResponse {
 message IncrementRequest {
   RequestHeader header = 1 [(gogoproto.nullable) = false, (gogoproto.embed) = true];
   int64 increment = 2;
+  bool with_bounds = 3;
+  int64 min_value = 4;
+  int64 max_value = 5;
 }
 
 // An IncrementResponse is the return value from the Increment

@@ -690,6 +690,13 @@ func (txn *Txn) Inc(ctx context.Context, key interface{}, value int64) (KeyValue
 	return getOneRow(txn.Run(ctx, b), b)
 }
 
+// IncWithBounds fdsfss
+func (txn *Txn) IncWithBounds(ctx context.Context, key interface{}, value, minValue, maxValue int64) (KeyValue, error) {
+	b := txn.NewBatch()
+	b.IncWithBounds(key, value, minValue, maxValue)
+	return getOneRow(txn.Run(ctx, b), b)
+}
+
 func (txn *Txn) scan(
 	ctx context.Context,
 	begin, end interface{},

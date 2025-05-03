@@ -1518,7 +1518,7 @@ func cmdIncrement(e *evalCtx) error {
 			MaxLockConflicts:               e.getMaxLockConflicts(),
 			OriginTimestamp:                originTimestamp,
 		}
-		curVal, acq, err := storage.MVCCIncrement(e.ctx, rw, key, ts, opts, inc)
+		curVal, acq, err := storage.MVCCIncrement(e.ctx, rw, key, ts, opts, inc, false, 0, 0)
 		if err != nil {
 			return err
 		}

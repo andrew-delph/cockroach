@@ -485,6 +485,24 @@ func (db *DB) Inc(ctx context.Context, key interface{}, value int64) (KeyValue, 
 	return getOneRow(db.Run(ctx, b), b)
 }
 
+// IncWithBounds fdsfss
+func (db *DB) IncWithBounds(ctx context.Context, key interface{}, value, minValue, maxValue int64) ([]Result, error) {
+	b := &Batch{}
+	b.IncWithBounds(key, value, minValue, maxValue)
+	return getResults(db.Run(ctx, b), b)
+}
+
+// IncWithBounds fdsfss
+func (db *DB) IncWithBounds2(ctx context.Context, key interface{}, value, minValue, maxValue int64) (KeyValue, KeyValue, error) {
+	b := &Batch{}
+	b.IncWithBounds(key, value, minValue, maxValue)
+	res, err := getResults(db.Run(ctx, b), b)
+	if err != nil {
+		return KeyValue{}, KeyValue{}, err
+	}
+	return res[0].Rows[0], res[1].Rows[0], nil
+}
+
 func (db *DB) scan(
 	ctx context.Context,
 	begin, end interface{},
@@ -1181,6 +1199,20 @@ func getOneResult(runErr error, b *Batch) (Result, error) {
 	return res, nil
 }
 
+func getResults(runErr error, b *Batch) ([]Result, error) {
+	if runErr != nil {
+		if len(b.Results) > 0 {
+			return b.Results, b.Results[0].Err
+		}
+		return []Result{Result{Err: runErr}}, runErr
+	}
+	res := b.Results[0]
+	if res.Err != nil {
+		panic("run succeeded even through the result has an error")
+	}
+	return b.Results, nil
+}
+
 // getOneRow returns the first row for a single-request Batch that was run.
 // runErr is the error returned by Run, b is the Batch that was passed to Run.
 func getOneRow(runErr error, b *Batch) (KeyValue, error) {
@@ -1210,4 +1242,21 @@ func IncrementValRetryable(ctx context.Context, db *DB, key roachpb.Key, inc int
 		break
 	}
 	return res.ValueInt(), err
+}
+
+func IncrementWithBoundsValRetryable(ctx context.Context, db *DB, key roachpb.Key, inc, minValue, maxValue int64) (KeyValue, KeyValue, error) {
+	var err error
+	var res1 KeyValue
+	var res2 KeyValue
+	retryOpts := base.DefaultRetryOptions()
+	retryOpts.Closer = db.Context().Stopper.ShouldQuiesce()
+	for r := retry.StartWithCtx(ctx, retryOpts); r.Next(); {
+		res1, res2, err = db.IncWithBounds2(ctx, key, inc, minValue, maxValue)
+		if errors.HasType(err, (*kvpb.UnhandledRetryableError)(nil)) ||
+			errors.HasType(err, (*kvpb.AmbiguousResultError)(nil)) {
+			continue
+		}
+		break
+	}
+	return res1, res2, err
 }

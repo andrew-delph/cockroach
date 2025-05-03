@@ -1654,6 +1654,20 @@ func NewIncrement(key roachpb.Key, increment int64) Request {
 	}
 }
 
+// NewIncrementWithBounds returns a Request initialized to increment the value at
+// key by increment.
+func NewIncrementWithBounds(key roachpb.Key, increment, minValue, maxValue int64) Request {
+	return &IncrementRequest{
+		RequestHeader: RequestHeader{
+			Key: key,
+		},
+		Increment:  increment,
+		WithBounds: true,
+		MinValue:   minValue,
+		MaxValue:   maxValue,
+	}
+}
+
 // NewPut returns a Request initialized to put the value at key.
 func NewPut(key roachpb.Key, value roachpb.Value) Request {
 	value.InitChecksum(key)

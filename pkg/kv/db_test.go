@@ -269,6 +269,7 @@ func TestDB_CPutInline(t *testing.T) {
 }
 
 func TestDB_Inc(t *testing.T) {
+	// return
 	defer leaktest.AfterTest(t)()
 	defer log.Scope(t).Close(t)
 	s, db := setup(t)
@@ -283,6 +284,94 @@ func TestDB_Inc(t *testing.T) {
 		t.Fatal(err)
 	}
 	checkIntResult(t, 100, result.ValueInt())
+
+	if _, err := db.Inc(ctx, "aa", 100); err != nil {
+		t.Fatal(err)
+	}
+	result, err = db.Get(ctx, "aa")
+	if err != nil {
+		t.Fatal(err)
+	}
+	checkIntResult(t, 200, result.ValueInt())
+}
+
+func TestDB_IncBounds(t *testing.T) {
+	defer leaktest.AfterTest(t)()
+	defer log.Scope(t).Close(t)
+	s, db := setup(t)
+	defer s.Stopper().Stop(context.Background())
+	ctx := context.Background()
+	var result kv.KeyValue
+	// var myres []kv.Result
+	var err error
+
+	var res1 kv.KeyValue
+	var res2 kv.KeyValue
+
+	// if _, err := db.Inc(ctx, "aa", 100); err != nil {
+	// 	t.Fatal(err)
+	// }
+	// result, err = db.Get(ctx, "aa")
+	// if err != nil {
+	// 	t.Fatal(err)
+	// }
+	// checkIntResult(t, 100, result.ValueInt())
+
+	if res1, res2, err = db.IncWithBounds2(ctx, "aa", 100, -150, 150); err != nil {
+		t.Fatal(err)
+	}
+	// checkIntResult(t, 1, int64(len(myres)))
+
+	fmt.Printf("\n\n\n111111111111111111===========================\n\n\n")
+
+	if res1.Exists() {
+		v, _ := res1.Value.GetInt()
+		fmt.Printf("res1 : %d\n", v)
+	} else {
+		fmt.Printf("res1 DOESNT EXIST\n")
+	}
+
+	if res2.Exists() {
+		v, _ := res2.Value.GetInt()
+		fmt.Printf("res2 : %d\n", v)
+	} else {
+		fmt.Printf("res2 DOESNT EXIST\n")
+	}
+
+	fmt.Printf("\n\n\n2222222222222222=================================\n\n\n")
+
+	result, err = db.Get(ctx, "aa")
+	if err != nil {
+
+		t.Fatal(err)
+	}
+	checkIntResult(t, 100, result.ValueInt())
+
+	if res1, res2, err = db.IncWithBounds2(ctx, "aa", 100, -150, 150); err != nil {
+		t.Fatal(err)
+	}
+	result, err = db.Get(ctx, "aa")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if res1.Exists() {
+		v, _ := res1.Value.GetInt()
+		fmt.Printf("res1 : %d\n", v)
+	} else {
+		fmt.Printf("res1 DOESNT EXIST\n")
+	}
+
+	if res2.Exists() {
+		v, _ := res2.Value.GetInt()
+		fmt.Printf("res2 : %d\n", v)
+	} else {
+		fmt.Printf("res2 DOESNT EXIST\n")
+	}
+
+	checkIntResult(t, 150, result.ValueInt())
+
+	// fmt.Printf("\n\n\n2222222222=============================================\n\n\n")
 }
 
 func TestBatch(t *testing.T) {
